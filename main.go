@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"os/exec"
 )
 
 func main() {
@@ -15,11 +16,32 @@ func main() {
 
 	switch command {
 	case "run":
-		fmt.Println("Run command received.")
+		run()
 	case "child":
 		fmt.Println("Child command received")
 	default:
 		fmt.Printf("Unknown command: %[1]s\n", command)
+		os.Exit(1)
+	}
+}
+
+func run() {
+	fmt.Printf("Running command: %[1]s\n", os.Args[2:])
+
+	/* 
+	`/proc/self/exe`: This is a special file in Linux systems that represents the currently running executable. 
+	By using this as the command to execute, the program is essentially launching a new instance of itself. 
+	*/
+	cmd := exec.Command("/proc/self/exe", append([]string{"child"}, os.Args[2:]...)...)
+
+	cmd.Stdin = os.Stdin
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+
+	err := cmd.Run()
+
+	if err != nil {
+		fmt.Println("Error: ", err)
 		os.Exit(1)
 	}
 }
