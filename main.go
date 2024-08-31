@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"syscall"
 )
 
 func main() {
@@ -38,10 +39,28 @@ func run() {
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 
-	err := cmd.Run()
+	// Set up the container environment
+	must(syscall.Sethostname([]byte("container")))
+	
+	extractDir := "ubi9.4_rootfs"
+	err := extractTar("ubi9.4_rootfs.tar", extractDir)
+	if err != nil {
+		panic(err)
+	}
+
+	// Use the extracted directory for Chroot
+	must(syscall.Chroot(extractDir))
+
+	err = cmd.Run()
 
 	if err != nil {
 		fmt.Println("Error: ", err)
 		os.Exit(1)
+	}
+}
+
+func must(err error) {
+	if err != nil {
+		panic(err)
 	}
 }
