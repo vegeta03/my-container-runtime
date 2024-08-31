@@ -7,15 +7,19 @@ import (
 
 func main() {
 	if len(os.Args) < 2 {
-		fmt.Println("Usage: go run main.go <command>")
+		fmt.Println("Usage: go run main.go run <command>")
 		os.Exit(1)
 	}
 
-	switch os.Args[1] {
+	command := os.Args[1]
+
+	switch command {
 	case "run":
-		fmt.Println("Running a container!!!")
+		fmt.Println("Run command received.")
+	case "child":
+		fmt.Println("Child command received")
 	default:
-		fmt.Println("Unknown command")
+		fmt.Printf("Unknown command: %[1]s\n", command)
 		os.Exit(1)
 	}
 }
