@@ -22,5 +22,5 @@ ubi9.4-rootfs/
 go.work
 go.work.sum
 
-# env file
-.envubi9.4_rootfs.tar
+# tar file
+ubi9.4_rootfs.tar
