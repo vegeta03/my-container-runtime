@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"path/filepath"
+	"strconv"
 	"syscall"
 )
 
@@ -39,6 +41,7 @@ func run() {
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 
+	// Set up namespaces for the child process
 	cmd.SysProcAttr = &syscall.SysProcAttr{
 		Cloneflags:   syscall.CLONE_NEWUTS | syscall.CLONE_NEWPID | syscall.CLONE_NEWNS,
 		Unshareflags: syscall.CLONE_NEWNS,
@@ -61,8 +64,20 @@ func child() {
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 
+	cg()
+
+	// Set up the container environment
 	must(syscall.Sethostname([]byte("container")))
-	must(syscall.Chroot("/"))
+	// Get current working directory
+	pwd, err := os.Getwd()
+	if err != nil {
+		fmt.Println("Error getting current directory:", err)
+		return
+	}
+
+	// Append a string to the pwd
+	ubi9Rootfs := filepath.Join(pwd, "/ubi9.4-rootfs/")
+	must(syscall.Chroot(ubi9Rootfs))
 	must(os.Chdir("/"))
 
 	/*
@@ -81,6 +96,30 @@ func child() {
 
 	must(syscall.Unmount("proc", 0))
 	must(syscall.Unmount("tmp", 0))
+}
+
+func cg() {
+	cgroup := "/sys/fs/cgroup"
+	containerDir := filepath.Join(cgroup, "container")
+
+	// Create the container directory if it doesn't exist
+	if err := os.MkdirAll(containerDir, 0755); err != nil {
+		fmt.Printf("Error creating cgroup directory: %v\n", err)
+		return
+	}
+
+	files := map[string]string{
+		"pids.max": "20",
+		// "notify_on_release": "1",
+		"cgroup.procs": strconv.Itoa(os.Getpid()),
+	}
+
+	for filename, content := range files {
+		path := filepath.Join(containerDir, filename)
+		if err := os.WriteFile(path, []byte(content), 0700); err != nil {
+			fmt.Printf("Error writing to %s: %v\n", path, err)
+		}
+	}
 }
 
 func must(err error) {
