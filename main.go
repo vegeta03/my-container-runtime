@@ -1,10 +1,13 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"os/exec"
 	"syscall"
+
+	"github.com/codeclysm/extract/v4"
 )
 
 func main() {
@@ -43,9 +46,15 @@ func run() {
 	must(syscall.Sethostname([]byte("container")))
 	
 	extractDir := "ubi9.4_rootfs"
+	progress := make(chan float64)
+	go func() {
+	    for p := range progress {
+	        fmt.Printf("Extraction progress: %.2f%%\r", p)
+	    }
+	}()
 	err := extractTar("ubi9.4_rootfs.tar", extractDir)
 	if err != nil {
-		panic(err)
+	    panic(err)
 	}
 
 	// Use the extracted directory for Chroot
@@ -57,6 +66,17 @@ func run() {
 		fmt.Println("Error: ", err)
 		os.Exit(1)
 	}
+}
+
+func extractTar(src string, dst string) error {
+	file, err := os.Open(src)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+	
+	ctx := context.Background()
+	return extract.Tar(ctx, file, dst, nil)
 }
 
 func must(err error) {
