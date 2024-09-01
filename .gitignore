@@ -24,3 +24,6 @@ go.work.sum
 
 # tar file
 ubi9.4_rootfs.tar
+ubi9.4_rootfs.tar.part_aa
+ubi9.4_rootfs.tar.part_ab
+ubi9.4_rootfs.tar.part_ac
