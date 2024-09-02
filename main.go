@@ -47,6 +47,25 @@ func run() {
 		Unshareflags: syscall.CLONE_NEWNS,
 	}
 
+	cmd.SysProcAttr.UidMappings = []syscall.SysProcIDMap{
+		{
+			ContainerID: 0,
+			HostID:      os.Getuid(),
+			Size:        1,
+		},
+	}
+	cmd.SysProcAttr.GidMappings = []syscall.SysProcIDMap{
+		{
+			ContainerID: 0,
+			HostID:      os.Getgid(),
+			Size:        1,
+		},
+	}
+
+	// Enable user namespaces
+	cmd.SysProcAttr.Credential = &syscall.Credential{Uid: 0, Gid: 0}
+	cmd.SysProcAttr.Cloneflags |= syscall.CLONE_NEWUSER
+
 	err := cmd.Run()
 
 	if err != nil {
@@ -109,9 +128,9 @@ func cg() {
 	}
 
 	files := map[string]string{
-		"pids.max": "20",
-		// "notify_on_release": "1",
 		"cgroup.procs": strconv.Itoa(os.Getpid()),
+		"pids.max":     "20",
+		// "notify_on_release": "1",
 	}
 
 	for filename, content := range files {
